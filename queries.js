@@ -2,7 +2,7 @@ var mongoose = require('mongoose');  //mongoose es algo que nos permite facilida
 var Schema = mongoose.Schema;    //se defina una variable Schema
 
 
-mongoose.connect("mongodb://localhost/hotelznode");  //se conecta a la base de datos, en el servidor adecuado y con el nombre de esta
+mongoose.connect("mongodb://admin-node:toor@ds227525.mlab.com:27525/hotelznode");  //se conecta a la base de datos, en el servidor adecuado y con el nombre de esta
 
 var hotelSchemaJSON = { //estructura del esquema, en formato json, excelente para nodo porque json surge de js y node esta basado en js
   hotel_id : String,

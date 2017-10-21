@@ -1,6 +1,6 @@
 var mongoose = require('mongoose');  //mongoose es algo que nos permite facilidad a la hora de manejar esquemas y hacer consultar
 var Schema = mongoose.Schema;    //se defina una variable Schema
-var _ = require("underscore");
+
 
 mongoose.connect("mongodb://localhost/hotelznode");  //se conecta a la base de datos, en el servidor adecuado y con el nombre de esta
 
@@ -45,7 +45,16 @@ function getRooms(req, res){ // función para obtener todos los usuarios
         json = doc;
   });
 
+  if(json == null) {
+    res.status(200).jsonp("No existen habitaciones");
+    return;
+  }
+
   Hotel.findOne({hotel_id: req.query.city}, '-_id -__v -hotel_id', function(err, doc) {
+    if(doc == null) {
+      res.status(200).jsonp("No existe el hotel");
+      return;   
+    }
     doc.rooms = json;
     res.status(200).jsonp(doc);
   });

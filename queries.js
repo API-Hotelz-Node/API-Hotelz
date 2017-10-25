@@ -76,19 +76,20 @@ function getRooms(req, res){ // función para obtener todos los usuarios
   Reserve.find({hotel_id: req.query.city, room_type: req.query.room_type, capacity: parseInt(req.query.hosts)},
    '-_id -__v', 
    function(err, doc) {
-    
-      res.status(200).send(doc);
-      return;  
-
     for(var i = 0; i < doc.length; i++) {
-      var arrive = new Date(doc.arrive_date).getTime();
-      var leave = new Date(doc.leave_date).getTime();      
-      if(new Date(req.query.arrive_date).getTime() >= arrive || new Date(req.query.arrive_date).getTime() <= leave) {
+      var arrive = (new Date(doc[i].arrive_date)).getTime();
+      var leave = (new Date(doc[i].leave_date)).getTime();    
+
+      if(((new Date(req.query.arrive_date)).getTime() >= arrive && (new Date(req.query.arrive_date)).getTime() < leave)
+          || ((new Date(req.query.leave_date)).getTime() > arrive && (new Date(req.query.arrive_date)).getTime() < leave)) {        
+        
+      } else {
         doc[i] = "";
       }
-    } 
+    }     
+    res.status(200).send(doc);
   });
-
+/*
   Hotel.findOne({hotel_id: req.query.city}, '-_id -__v -hotel_id', function(err, doc) {
     if(doc == null) {
       res.status(200).jsonp("No existe el hotel");
@@ -96,7 +97,7 @@ function getRooms(req, res){ // función para obtener todos los usuarios
     }
     doc.rooms = json;
     res.status(200).send(doc);
-  });
+  });*/
 
   /*if(typeof req.query.arrive_date === 'undefined') {
     console.log('No existe id'); ,{capacity: parseInt(req.query.hosts)}

@@ -63,41 +63,66 @@ var Reserve = mongoose.model("Reserve", reserve_schema);
 var json;
 
 function getRooms(req, res){ // función para obtener todos los usuarios
-	Room.find({hotel_id: req.query.city, room_type: req.query.room_type, capacity: parseInt(req.query.hosts)},
-   '-_id -__v -hotel_id -rooms_number', function(err, doc) {
-        json = doc;
-  });
 
-  if(json == null) {
-    res.status(200).send("No existen habitaciones");
-    return;
+  if(req.query.room_type == 'l') {
+    req.query.room_type = 'L';
+  }
+  if(req.query.room_type == 's') {
+    req.query.room_type = 'S';
   }
 
-  Reserve.find({hotel_id: req.query.city, room_type: req.query.room_type, capacity: parseInt(req.query.hosts)},
-   '-_id -__v', 
-   function(err, doc) {
-    for(var i = 0; i < doc.length; i++) {
-      var arrive = (new Date(doc[i].arrive_date)).getTime();
-      var leave = (new Date(doc[i].leave_date)).getTime();    
-
-      if(((new Date(req.query.arrive_date)).getTime() >= arrive && (new Date(req.query.arrive_date)).getTime() < leave)
-          || ((new Date(req.query.leave_date)).getTime() > arrive && (new Date(req.query.arrive_date)).getTime() < leave)) {        
-        
-      } else {
-        doc[i] = "";
+	Room.find({hotel_id: req.query.city, room_type: req.query.room_type, capacity: parseInt(req.query.hosts)},
+   '-_id -__v -hotel_id', function(err, doc) {
+      if(doc.length == 0) {
+        res.status(200).send("No existen habitaciones");
+        return;
       }
-    }     
-    res.status(200).send(doc);
+      json = doc;
+
+      var dates = (new Date(req.query.leave_date)).getTime() - (new Date(req.query.arrive_date)).getTime();
+
+      if(dates <= 0) {
+        res.status(200).send("La fecha de salida debe ser superior a la de llegada");
+        return; 
+      }
+
+      dates = parseInt(dates / 86400000);
+
+      json[0].price = json[0].price * dates;
+
+      var quantityReserves = [];
+
+      Reserve.find({hotel_id: req.query.city, room_type: req.query.room_type, capacity: parseInt(req.query.hosts)},
+       '-_id -__v', 
+       function(err, doc) {
+        for(var i = 0; i < doc.length; i++) {
+          var arrive = (new Date(doc[i].arrive_date)).getTime();
+          var leave = (new Date(doc[i].leave_date)).getTime();    
+
+          if(((new Date(req.query.arrive_date)).getTime() >= arrive && (new Date(req.query.arrive_date)).getTime() < leave)
+              || ((new Date(req.query.leave_date)).getTime() > arrive && (new Date(req.query.arrive_date)).getTime() < leave)) {        
+            quantityReserves.push(doc[i]);
+          } else {
+            doc[i] = "";        
+          }      
+        }
+
+        Hotel.findOne({hotel_id: req.query.city}, '-_id -__v -hotel_id', function(err, doc) {
+          if(doc == null) {
+            res.status(200).jsonp("No existe el hotel");
+            return;   
+          }
+          if(quantityReserves.length < json[0].rooms_number) {            
+            json[0].rooms_number = undefined;
+            console.log(json);
+            doc.rooms = json; 
+          } 
+          res.status(200).send(doc);
+        });
+      });
+
+
   });
-/*
-  Hotel.findOne({hotel_id: req.query.city}, '-_id -__v -hotel_id', function(err, doc) {
-    if(doc == null) {
-      res.status(200).jsonp("No existe el hotel");
-      return;   
-    }
-    doc.rooms = json;
-    res.status(200).send(doc);
-  });*/
 
   /*if(typeof req.query.arrive_date === 'undefined') {
     console.log('No existe id'); ,{capacity: parseInt(req.query.hosts)}

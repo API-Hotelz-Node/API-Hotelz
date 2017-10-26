@@ -74,7 +74,7 @@ function getRooms(req, res){ // función para obtener todos los usuarios
 	Room.find({hotel_id: req.query.city, room_type: req.query.room_type, capacity: parseInt(req.query.hosts)},
    '-_id -__v -hotel_id', function(err, doc) {
       if(doc.length == 0) {
-        res.status(200).send("No existen habitaciones");
+        res.status(200).send({"message": "No existen habitaciones"});
         return;
       }
       json = doc;
@@ -82,7 +82,7 @@ function getRooms(req, res){ // función para obtener todos los usuarios
       var dates = (new Date(req.query.leave_date)).getTime() - (new Date(req.query.arrive_date)).getTime();
 
       if(dates <= 0) {
-        res.status(200).send("La fecha de salida debe ser superior a la de llegada");
+        res.status(200).send({"message": "La fecha de salida debe ser superior a la de llegada"});
         return; 
       }
 
@@ -109,12 +109,11 @@ function getRooms(req, res){ // función para obtener todos los usuarios
 
         Hotel.findOne({hotel_id: req.query.city}, '-_id -__v -hotel_id', function(err, doc) {
           if(doc == null) {
-            res.status(200).jsonp("No existe el hotel");
+            res.status(200).jsonp({"message": "No existe el hotel"});
             return;   
           }
           if(quantityReserves.length < json[0].rooms_number) {            
             json[0].rooms_number = undefined;
-            console.log(json);
             doc.rooms = json; 
           } 
           res.status(200).send(doc);
@@ -165,7 +164,7 @@ function saveReserve(req, res) { //función para guardar un usuario
     || req.body.user.doc_id == null || req.body.user.doc_id == ""
     || req.body.user.email == null || req.body.user.email == ""
     || req.body.user.phone_number == null || req.body.user.phone_number == "") {
-    res.status(400).send("Error llenando los campos");  
+    res.status(400).send({"message": "Error llenando los campos"});  
     return;
   }
 
@@ -191,12 +190,12 @@ function saveReserve(req, res) { //función para guardar un usuario
   var leave_date_split = reserve.leave_date.split("-");
 
   if(arrive_date_split.length != 3 || leave_date_split.length != 3) {
-    res.status(400).send("Error en el formato de las fechas");  
+    res.status(400).send({"message": "Error en el formato de las fechas"});  
     return;
   }
 
   if((new Date(reserve.arrive_date)).getTime() >= (new Date(reserve.leave_date)).getTime()) {
-      res.status(400).send("La fecha de salida debe ser superior a la de llegada");  
+      res.status(400).send({"message": "La fecha de salida debe ser superior a la de llegada"});  
       return;
   }
 
@@ -205,16 +204,16 @@ function saveReserve(req, res) { //función para guardar un usuario
   var subtraction = ((new Date()).getTime() - (new Date(reserve.arrive_date)).getTime()) - 18000000; //le quito 5 horas
 
   if(subtraction > 86400000) { //verifico si es el mismo día
-      res.status(400).send("La fecha de llegada debe ser igual o mayor a la de hoy");  
+      res.status(400).send({"message": "La fecha de llegada debe ser igual o mayor a la de hoy"});  
       return;
   }
 
   reserve.save(function(err, doc) {
     if(err) {
-      res.status(500).send("Error en el servidor");  
+      res.status(500).send({"message": "Error en el servidor"});  
       return;
     }
-    res.status(200).send(reserve._id);
+    res.status(200).send({"reservation_id": reserve._id});
   });
 
 };

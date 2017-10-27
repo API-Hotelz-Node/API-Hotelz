@@ -4,7 +4,7 @@ var Schema = mongoose.Schema;    //se defina una variable Schema
 
 mongoose.connect("mongodb://admin-node:toor@ds227525.mlab.com:27525/hotelznode");  //se conecta a la base de datos, en el servidor adecuado y con el nombre de esta
 
-var hotelSchemaJSON = { //estructura del esquema, en formato json, excelente para nodo porque json surge de js y node esta basado en js
+var hotelSchemaJSON = { //estructura del esquema, en formato json, excelente para node porque json surge de js y node esta basado en js
   hotel_id : String,
   hotel_name: String,
   hotel_location: {
@@ -62,60 +62,60 @@ var Reserve = mongoose.model("Reserve", reserve_schema);
 
 var json;
 
-function getRooms(req, res){ // función para obtener todos los usuarios
+function getRooms(req, res){ // función para obtener todos los cuartos disponibles
 
-  if(req.query.room_type == 'l') {
+  if(req.query.room_type == 'l') {    //validacion para que no ingluyan masyusculas ni minusculas en la consulta de la habitacion
     req.query.room_type = 'L';
   }
-  if(req.query.room_type == 's') {
+  if(req.query.room_type == 's') {    //validacion para que no ingluyan masyusculas ni minusculas en la consulta de la habitacion
     req.query.room_type = 'S';
   }
 
-	Room.find({hotel_id: req.query.city, room_type: req.query.room_type, capacity: parseInt(req.query.hosts)},
-   '-_id -__v -hotel_id', function(err, doc) {
-      if(doc.length == 0) {
-        res.status(200).send({"message": "No existen habitaciones"});
-        return;
+	Room.find({hotel_id: req.query.city, room_type: req.query.room_type, capacity: parseInt(req.query.hosts)},  //Busca habitaciones filtrando por
+   '-_id -__v -hotel_id', function(err, doc) {                                                                //id del hotel, por tipo de habitaciones
+      if(doc.length == 0) {                                                                                   //y por capacidad de esta, ademas de
+        res.status(200).send({"message": "No existen habitaciones"});                                         //esto evita que se muestre en el json
+        return;                                                                                               //los campos _id,__v y hotel_id
       }
       json = doc;
 
-      var dates = (new Date(req.query.leave_date)).getTime() - (new Date(req.query.arrive_date)).getTime();
+      var dates = (new Date(req.query.leave_date)).getTime() - (new Date(req.query.arrive_date)).getTime(); //recupera el numero de dias en milisegundos que el usuario reservó
 
-      if(dates <= 0) {
+      if(dates <= 0) {                                          //Valida que la fecha de salida sea mayor a la de entrada
         res.status(200).send({"message": "La fecha de salida debe ser superior a la de llegada"});
-        return; 
+        return;
       }
 
-      dates = parseInt(dates / 86400000);
+      dates = parseInt(dates / 86400000);             //recupera el numero de dias que se hospedara el usuario
+      json[0].price = json[0].price * dates;  //calcula el precio segun la cantidad de dias que se hospedara ye l precio por dia de la habitacion
 
-      json[0].price = json[0].price * dates;
 
       var quantityReserves = [];
 
-      Reserve.find({hotel_id: req.query.city, room_type: req.query.room_type, capacity: parseInt(req.query.hosts)},
-       '-_id -__v', 
+      Reserve.find({hotel_id: req.query.city, room_type: req.query.room_type, capacity: parseInt(req.query.hosts)},     //busca las reservaciones existentes
+       '-_id -__v',                                                                                               //por room_type, hotel_id, y capacidad
        function(err, doc) {
-        for(var i = 0; i < doc.length; i++) {
-          var arrive = (new Date(doc[i].arrive_date)).getTime();
-          var leave = (new Date(doc[i].leave_date)).getTime();    
+        for(var i = 0; i < doc.length; i++) {                              //busca las habitaciones que hay disponibles segun la consulta que
+          var arrive = (new Date(doc[i].arrive_date)).getTime();           //el susario realizó
+          var leave = (new Date(doc[i].leave_date)).getTime();
 
-          if(((new Date(req.query.arrive_date)).getTime() >= arrive && (new Date(req.query.arrive_date)).getTime() < leave)
-              || ((new Date(req.query.leave_date)).getTime() > arrive && (new Date(req.query.arrive_date)).getTime() < leave)) {        
-            quantityReserves.push(doc[i]);
-          } else {
-            doc[i] = "";        
-          }      
+          if(((new Date(req.query.arrive_date)).getTime() >= arrive && (new Date(req.query.arrive_date)).getTime() < leave)       //Compara que la habitacion este disponible para las fechas solicitadas
+              || ((new Date(req.query.leave_date)).getTime() > arrive && (new Date(req.query.arrive_date)).getTime() < leave)) {
+            quantityReserves.push(doc[i]);                                                       //Quita el campo cuantityReserves del JSON para evitar mostrarlo
+          } else {                                                                    //si la consulta es disponible
+            doc[i] = "";
+          }
         }
 
-        Hotel.findOne({hotel_id: req.query.city}, '-_id -__v -hotel_id', function(err, doc) {
-          if(doc == null) {
+        Hotel.findOne({hotel_id: req.query.city}, '-_id -__v -hotel_id', function(err, doc) {   //Busca los datos del hotel filtrando por codigo de este
+          if(doc == null) {                                                                       //muestra en la consulta de la habitacion todos los datos
             res.status(200).jsonp({"message": "No existe el hotel"});
-            return;   
+            return;
           }
-          if(quantityReserves.length < json[0].rooms_number) {            
-            json[0].rooms_number = undefined;
-            doc.rooms = json; 
-          } 
+          if(quantityReserves.length < json[0].rooms_number) {            //se asigna al campo rooms del schema hotel, en un vector de json
+            json[0].rooms_number = undefined;                             //las habitaciones diponibles.
+            doc.rooms = json;
+          }
           res.status(200).send(doc);
         });
       });
@@ -123,14 +123,11 @@ function getRooms(req, res){ // función para obtener todos los usuarios
 
   });
 
-  /*if(typeof req.query.arrive_date === 'undefined') {
-    console.log('No existe id'); ,{capacity: parseInt(req.query.hosts)}
-  }*/
+
 };
 
-// http://localhost:3001/v1/rooms?arrive_date=2017-10-14&leave_date=2017-10-16&city=05001&hosts=2&room_type=L
 
-function getAll(req, res){ // función para obtener todos los usuarios
+function getAll(req, res){ // función para obtener todas las habitaciones
 
   Room.find({}, '-_id -__v', function(err, doc) {
 
@@ -140,7 +137,7 @@ function getAll(req, res){ // función para obtener todos los usuarios
 };
 
 
-function saveHotel(req, res) { //función para guardar un usuario
+function saveHotel(req, res) { //función para guardar un hotel, Unicamente se guardaron dos (medellin y bogotá)
   var hotel = new Hotel({
     hotel_id: req.body.hotel_id, hotel_name: req.body.hotel_name, hotel_location: {
     address: req.body.hotel_location.address, lat: req.body.hotel_location.lat, long: req.body.hotel_location.long},
@@ -152,23 +149,23 @@ function saveHotel(req, res) { //función para guardar un usuario
   });
 };
 
-function saveReserve(req, res) { //función para guardar un usuario
+function saveReserve(req, res) { //función para guardar una reserva
 
-  if(req.body.arrive_date == null || req.body.arrive_date == ""
+  if(req.body.arrive_date == null || req.body.arrive_date == ""           //Validaciones para que para que se llenen todos los campos
     || req.body.leave_date == null || req.body.leave_date == ""
     || req.body.room_type == null || req.body.room_type == ""
     || req.body.capacity == null || req.body.capacity == 0
-    || req.body.beds.simple == null || req.body.beds.double == null 
+    || req.body.beds.simple == null || req.body.beds.double == null
     || req.body.hotel_id == null || req.body.hotel_id == ""
     || req.body.user.doc_type == null || req.body.user.doc_type == ""
     || req.body.user.doc_id == null || req.body.user.doc_id == ""
     || req.body.user.email == null || req.body.user.email == ""
     || req.body.user.phone_number == null || req.body.user.phone_number == "") {
-    res.status(400).send({"message": "Error llenando los campos"});  
+    res.status(400).send({"message": "Error llenando los campos"});
     return;
   }
 
-  var reserve = new Reserve({
+  var reserve = new Reserve({                   //Se crea la variable reserve que es donde se almacenaran los datos en JSON
       arrive_date: req.body.arrive_date,
       leave_date: req.body.leave_date,
       room_type: req.body.room_type,
@@ -186,31 +183,31 @@ function saveReserve(req, res) { //función para guardar un usuario
       }
     });
 
-  var arrive_date_split = reserve.arrive_date.split("-");
-  var leave_date_split = reserve.leave_date.split("-");
+  var arrive_date_split = reserve.arrive_date.split("-");           //Vector de fecha [YYYY,MM,AA]
+  var leave_date_split = reserve.leave_date.split("-");             //Vector de fecha [YYYY,MM,AA]
 
-  if(arrive_date_split.length != 3 || leave_date_split.length != 3) {
-    res.status(400).send({"message": "Error en el formato de las fechas"});  
+  if(arrive_date_split.length != 3 || leave_date_split.length != 3) {  //Valida que el formato de la fecha sea correcto
+    res.status(400).send({"message": "Error en el formato de las fechas"});
     return;
   }
 
-  if((new Date(reserve.arrive_date)).getTime() >= (new Date(reserve.leave_date)).getTime()) {
-      res.status(400).send({"message": "La fecha de salida debe ser superior a la de llegada"});  
+  if((new Date(reserve.arrive_date)).getTime() >= (new Date(reserve.leave_date)).getTime()) {   //Valida que la fecha de salida se mayor a la de llegada
+      res.status(400).send({"message": "La fecha de salida debe ser superior a la de llegada"});
       return;
   }
 
   var d = new Date();
 
-  var subtraction = ((new Date()).getTime() - (new Date(reserve.arrive_date)).getTime()) - 18000000; //le quito 5 horas
+  var subtraction = ((new Date()).getTime() - (new Date(reserve.arrive_date)).getTime()) - 18000000; //le quito 5 horas UTC colombia est atrasado
 
   if(subtraction > 86400000) { //verifico si es el mismo día
-      res.status(400).send({"message": "La fecha de llegada debe ser igual o mayor a la de hoy"});  
+      res.status(400).send({"message": "La fecha de llegada debe ser igual o mayor a la de hoy"});
       return;
   }
 
-  reserve.save(function(err, doc) {
+  reserve.save(function(err, doc) {       //Se guarda la reservacion
     if(err) {
-      res.status(500).send({"message": "Error en el servidor"});  
+      res.status(500).send({"message": "Error en el servidor"});
       return;
     }
     res.status(200).send({"reservation_id": reserve._id});
@@ -218,7 +215,7 @@ function saveReserve(req, res) { //función para guardar un usuario
 
 };
 
-function save(req, res) { //función para guardar un usuario
+function save(req, res) { //función para guarda la habitacion
   var room = new Room({
     hotel_id: req.body.hotel_id, room_type: req.body.room_type, capacity: req.body.capacity,  rooms_number: req.body.rooms_number,
     price: req.body.price, currency: req.body.currency, room_thumbnail: req.body.room_thumbnail, description: req.body.description,

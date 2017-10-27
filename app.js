@@ -8,7 +8,7 @@ var app = express();  //crea el servicio
 app.listen(process.env.PORT || 3001, function() {     //se pone a escuchar en el puerto 3001
 });
 
-app.use(bodyParser.urlencoded({extend: true})); //le digo al sistema que voy a parsear el cuerpo de la respuesta de la solic
+app.use(bodyParser.urlencoded({extend: true})); //le digo al sistema que voy a parsear el cuerpo de la respuesta de la solicitud
 app.use(bodyParser.json());
 app.use(cors());
 app.options('*', cors());

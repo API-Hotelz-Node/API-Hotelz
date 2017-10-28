@@ -107,7 +107,7 @@ function getRooms(req, res){ // función para obtener todos los cuartos disponib
           }
         }
 
-        Hotel.findOne({hotel_id: req.query.city}, '-_id -__v -hotel_id', function(err, doc) {   //Busca los datos del hotel filtrando por codigo de este
+        Hotel.findOne({hotel_id: req.query.city}, '-_id -__v', function(err, doc) {   //Busca los datos del hotel filtrando por codigo de este
           if(doc == null) {                                                                       //muestra en la consulta de la habitacion todos los datos
             res.status(200).jsonp({"message": "No existe el hotel"});
             return;
